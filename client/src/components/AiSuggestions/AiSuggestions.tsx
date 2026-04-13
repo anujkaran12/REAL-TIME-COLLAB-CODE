@@ -10,8 +10,8 @@ interface Iprop {
 }
 
 interface IOuputs {
-  prompt: "string";
-  result: "string";
+  prompt: string;
+  result: string;
 }
 
 const AiSuggestions: React.FC<Iprop> = ({ code, setCode }) => {
@@ -63,13 +63,13 @@ const requestParts = [{ text: requestText }];
       // // setLoading(false)
       // return;
       const res = await axios.post(
-        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
+        `${process.env.REACT_APP_BACKEND_URL}/api/ai/suggest`,
         {
           contents: [{ parts: requestParts }],
         },
         {
           headers: {
-            "X-goog-api-key": process.env.REACT_APP_GEMINI_API_KEY || "",
+            Authorization: localStorage.getItem(process.env.REACT_APP_AUTH_TOKEN || "AUTH_TOKEN") || "",
             "Content-Type": "application/json",
           },
         }

@@ -27,8 +27,10 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
   const { userData } = useSelector((state: RootState) => state.User);
   useEffect(() => {
     if (userData) {
+      const token = localStorage.getItem(process.env.REACT_APP_AUTH_TOKEN || "AUTH_TOKEN");
       const webSocket = io(process.env.REACT_APP_BACKEND_URL, {
         autoConnect: true,
+        auth: { token },
       });
       setSocket(webSocket);
       //connect socket to the server

@@ -197,10 +197,8 @@ export const sendVerificationCode = async (req: Request, res: Response) => {
     const response = await sendMail(email, subject, html);
     if (response) {
       return res.status(200).json({
-        msg: "Verification code sended to you email address",
+        msg: "Verification code sent to your email address",
         type: "SUCCESS",
-        verificationCode:verificationCode.toString(),
-        
       });
     }
     return res.status(400).json({ msg: "Failed to send email", type: "ERROR" });

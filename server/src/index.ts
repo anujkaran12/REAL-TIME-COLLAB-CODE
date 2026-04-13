@@ -5,6 +5,8 @@ import { authRouter } from "./routes/authRouter";
 import cors from "cors";
 import { userRouter } from "./routes/userRouter";
 import { loginValidator } from "./utils/loginValidator";
+import { aiRouter } from "./routes/aiRouter";
+import jwt from "jsonwebtoken";
 import { Server } from "socket.io";
 import http from "http";
 
@@ -16,9 +18,13 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(express.json());
+const allowedOrigins = process.env.FRONTEND_URL
+  ? process.env.FRONTEND_URL.split(",").map((url) => url.trim())
+  : ["http://localhost:3000"];
+
 app.use(
   cors({
-    origin: "*",
+    origin: allowedOrigins,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
@@ -29,7 +35,7 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: "*", // allow all origins for testing; replace with your frontend URL in production
+    origin: allowedOrigins,
     methods: ["GET", "POST"],
   },
 });
@@ -47,6 +53,21 @@ type Room = {
   participants: Participant[]; // socketId -> userName
 };
 let rooms = new Map<string, Room>();
+// Socket authentication middleware
+io.use((socket, next) => {
+  const token = socket.handshake.auth?.token;
+  if (!token) {
+    return next(new Error("Authentication required"));
+  }
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_KEY as string);
+    (socket as any).userID = decoded;
+    next();
+  } catch {
+    return next(new Error("Invalid or expired token"));
+  }
+});
+
 // Listen for socket connections
 io.on("connection", (socket) => {
   console.log("A client connected:", socket.id);
@@ -300,10 +321,11 @@ io.on("connection", (socket) => {
   });
 });
 
-// Default route
+// Routes
 app.use("/api/auth", authRouter);
 app.use(loginValidator);
 app.use("/api/user", userRouter);
+app.use("/api/ai", aiRouter);
 
 // Start server
 server.listen(PORT, async () => {
