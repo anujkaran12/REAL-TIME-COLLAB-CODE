@@ -43,6 +43,11 @@
   color: var(--warning-color);
 }
 
+.status-badge.idle {
+  background: color-mix(in srgb, var(--subtext-color) 15%, transparent);
+  color: var(--subtext-color);
+}
+
 .output-details {
   display: flex;
   gap: 1rem;

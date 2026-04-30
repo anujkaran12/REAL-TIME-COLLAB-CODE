@@ -76,7 +76,8 @@
   bottom: 10px;
   right: 10px;
 }
-.form input {
+.form input,
+.form select {
   padding: 12px;
   border-radius: 8px;
   border: 1px solid var(--border-color);
@@ -89,12 +90,17 @@
   outline:0
 }
 
+.form select {
+  cursor: pointer;
+}
+
 .form input::placeholder {
   color: var(--subtext-color);
   letter-spacing: 0px;
   font-size: .9rem
 }
-.form input:focus{
+.form input:focus,
+.form select:focus{
   border: 1px var(--highlight-color);
   border-style: groove;
 }

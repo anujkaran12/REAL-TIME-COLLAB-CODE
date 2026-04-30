@@ -7,6 +7,9 @@ import { userRouter } from "./routes/userRouter";
 import { loginValidator } from "./utils/loginValidator";
 import { Server } from "socket.io";
 import http from "http";
+import { codeRouter } from "./routes/codeRouter";
+import { dashboardRouter } from "./routes/dashboardRouter";
+import { sessionModel } from "./models/sessionModel";
 
 //config env varibale for accessing
 dotenv.config();
@@ -44,9 +47,27 @@ type Room = {
   roomPassword?: string;
   hostUserId?: string;
   hostSocketId?: string;
+  maxParticipants: number;
+  lastCode: string;
+  lastLanguage: string;
   participants: Participant[]; // socketId -> userName
 };
 let rooms = new Map<string, Room>();
+
+const ROOM_TITLE_MIN_LENGTH = 3;
+const ROOM_TITLE_MAX_LENGTH = 50;
+const ROOM_PASSWORD_MIN_LENGTH = 4;
+const ROOM_PASSWORD_MAX_LENGTH = 20;
+const DEFAULT_CODE_SNIPPET = `function greet(name) {
+\tconsole.log("Hello, " + name + "!");
+}
+
+greet("World");`;
+
+const isWithinLength = (value: string, min: number, max: number) => {
+  const length = value.trim().length;
+  return length >= min && length <= max;
+};
 // Listen for socket connections
 io.on("connection", (socket) => {
   console.log("A client connected:", socket.id);
@@ -54,7 +75,29 @@ io.on("connection", (socket) => {
   /********************** listen emit event from the client - create-room  ****************************/
   socket.on(
     "create-room",
-    ({ roomTitle, roomPassword, userData, hostUserId }) => {
+    async ({ roomTitle, roomPassword, userData, hostUserId, maxParticipants = 5 }) => {
+      if (
+        !roomTitle ||
+        !isWithinLength(roomTitle, ROOM_TITLE_MIN_LENGTH, ROOM_TITLE_MAX_LENGTH)
+      ) {
+        socket.emit("room-create-log", {
+          msg: `Room title must be ${ROOM_TITLE_MIN_LENGTH}-${ROOM_TITLE_MAX_LENGTH} characters.`,
+          type: "WARNING",
+        });
+        return;
+      }
+
+      if (
+        !roomPassword ||
+        !isWithinLength(roomPassword, ROOM_PASSWORD_MIN_LENGTH, ROOM_PASSWORD_MAX_LENGTH)
+      ) {
+        socket.emit("room-create-log", {
+          msg: `Room password must be ${ROOM_PASSWORD_MIN_LENGTH}-${ROOM_PASSWORD_MAX_LENGTH} characters.`,
+          type: "WARNING",
+        });
+        return;
+      }
+
       let roomID: string = "";
       console.log("CREATE ROOM TRIGGER");
       while (1) {
@@ -67,13 +110,28 @@ io.on("connection", (socket) => {
       }
 
       socket.join(roomID);
+      const roomLimit = Math.min(Math.max(Number(maxParticipants) || 5, 1), 20);
 
       rooms.set(roomID, {
         roomID,
-        roomTitle,
-        roomPassword,
+        roomTitle: roomTitle.trim(),
+        roomPassword: roomPassword.trim(),
         hostUserId,
         hostSocketId: socket.id,
+        maxParticipants: roomLimit,
+        lastCode: DEFAULT_CODE_SNIPPET,
+        lastLanguage: "javascript",
+        participants: [],
+      });
+      await sessionModel.create({
+        roomID,
+        roomTitle: roomTitle.trim(),
+        roomPassword: roomPassword.trim(),
+        hostUserId,
+        hostSocketId: socket.id,
+        maxParticipants: roomLimit,
+        lastCode: DEFAULT_CODE_SNIPPET,
+        lastLanguage: "javascript",
         participants: [],
       });
       // console.log("Room - ", rooms.get(roomID));
@@ -87,7 +145,7 @@ io.on("connection", (socket) => {
   );
 
   /********************** listen emit event from the client - join-room  ****************************/
-  socket.on("join-room", ({ roomID, roomPassword, userData }) => {
+  socket.on("join-room", async ({ roomID, roomPassword, userData }) => {
     const room = rooms.get(roomID);
 
     if (!room) {
@@ -114,6 +172,14 @@ io.on("connection", (socket) => {
     if (userExistsInRoom) {
       return;
     }
+
+    if (room.participants.length >= room.maxParticipants) {
+      socket.emit("join-room-error", {
+        msg: "Room is full.",
+        type: "ERROR",
+      });
+      return;
+    }
     console.log("JOIN ROOM - ", roomID);
 
     socket.join(roomID);
@@ -124,6 +190,25 @@ io.on("connection", (socket) => {
       role: room.hostSocketId === socket.id ? "HOST" : "GUEST",
     });
     rooms.set(roomID, room);
+    await sessionModel.updateOne(
+      { roomID },
+      {
+        $push: {
+          participants: {
+            userId: userData?._id,
+            name: userData?.name,
+            email: userData?.email,
+            avatar: userData?.avatar,
+            socketID: socket.id,
+            role: room.hostSocketId === socket.id ? "HOST" : "GUEST",
+          },
+        },
+        $set: {
+          status: "ACTIVE",
+          hostSocketId: room.hostSocketId,
+        },
+      }
+    );
 
     socket.emit("join-room-success", {
       msg:
@@ -160,6 +245,14 @@ io.on("connection", (socket) => {
       return;
     }
 
+    if (room.participants.length >= room.maxParticipants) {
+      socket.emit("join-room-check-valid", {
+        msg: "Room is full.",
+        type: "ERROR",
+      });
+      return;
+    }
+
     socket.emit("join-room-check-valid", {
       msg: "Room found and accessible.",
       roomID,
@@ -169,7 +262,7 @@ io.on("connection", (socket) => {
   });
 
   /***********************************  listen emit event from the client - leave-room  **********************************/
-  socket.on("leave-room", ({ roomID, userData }) => {
+  socket.on("leave-room", async ({ roomID, userData }) => {
     const room = rooms.get(roomID);
     console.log("leave-room");
     if (!room) {
@@ -180,6 +273,17 @@ io.on("connection", (socket) => {
     //checking if the host leave the room then end the session
     if (room.hostSocketId === socket.id) {
       rooms.delete(roomID);
+      await sessionModel.updateOne(
+        { roomID },
+        {
+          $set: {
+            status: "ENDED",
+            endedAt: new Date(),
+            "participants.$[participant].leftAt": new Date(),
+          },
+        },
+        { arrayFilters: [{ "participant.socketID": socket.id }] }
+      );
       socket.to(roomID).emit("end-session", {
         msg: `Host ended the session for room "${room.roomTitle}`,
         type: "INFO",
@@ -191,6 +295,14 @@ io.on("connection", (socket) => {
     // Remove the leaving participant from the participants array
     room.participants = room.participants.filter(
       (p: Participant) => p.socketID !== socket.id
+    );
+    await sessionModel.updateOne(
+      { roomID, "participants.socketID": socket.id },
+      {
+        $set: {
+          "participants.$.leftAt": new Date(),
+        },
+      }
     );
 
     // Update the room map
@@ -219,7 +331,7 @@ io.on("connection", (socket) => {
     }
   });
   /***************************************** Remove participant from room **************************************/
-  socket.on("remove-participant", ({ roomId, participantSocketId }) => {
+  socket.on("remove-participant", async ({ roomId, participantSocketId }) => {
     const room = rooms.get(roomId);
 
     if (!room) {
@@ -235,6 +347,14 @@ io.on("connection", (socket) => {
     );
     room.participants = room.participants.filter(
       (p) => p.socketID !== participantSocketId
+    );
+    await sessionModel.updateOne(
+      { roomID: roomId, "participants.socketID": participantSocketId },
+      {
+        $set: {
+          "participants.$.leftAt": new Date(),
+        },
+      }
     );
 
     io.to(roomId).emit("participant-removed", {
@@ -256,7 +376,7 @@ io.on("connection", (socket) => {
     }
   });
   /*************************************** Listining on code update *****************************************/
-  socket.on("code-update", ({ updatedCode, roomID, editorName }) => {
+  socket.on("code-update", async ({ updatedCode, roomID, editorName, language }) => {
     const room = rooms.get(roomID);
 
     if (!room) {
@@ -266,6 +386,21 @@ io.on("connection", (socket) => {
       });
       return;
     }
+
+    room.lastCode = updatedCode;
+    room.lastLanguage = language || room.lastLanguage || "javascript";
+    rooms.set(roomID, room);
+    await sessionModel.updateOne(
+      { roomID },
+      {
+        $set: {
+          lastCode: updatedCode,
+          lastLanguage: room.lastLanguage,
+          lastEditedBy: editorName,
+          lastEditedAt: new Date(),
+        },
+      }
+    );
 
     socket.to(roomID).emit("code-update", { updatedCode, editorName });
   });
@@ -302,7 +437,12 @@ io.on("connection", (socket) => {
 
 // Default route
 app.use("/api/auth", authRouter);
+// Temporarily disabled for local API testing in Postman.
+// Re-enable this before production or protected-route testing.
+// app.use(loginValidator);
 app.use(loginValidator);
+app.use("/api/dashboard", dashboardRouter);
+app.use("/api/code", codeRouter);
 app.use("/api/user", userRouter);
 
 // Start server

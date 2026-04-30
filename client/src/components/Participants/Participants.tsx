@@ -3,6 +3,7 @@ import "./Participants.css";
 import { useSocket } from "../../context/socketContext";
 import { useSearchParams } from "react-router-dom";
 import ReactAvatar from "react-avatar";
+import { getAvatarColor } from "../../utils/avatarColor";
 interface Iprop {
   participantsData: any[];
   hostSocketId: string;
@@ -39,7 +40,12 @@ const Participants: React.FC<Iprop> = ({ participantsData, hostSocketId }) => {
                   loading="lazy"
                 />
               ) : (
-                <ReactAvatar name={p.userData.name} round={true} size="95"/>
+                <ReactAvatar
+                  name={p.userData.name}
+                  round={true}
+                  size="95"
+                  color={getAvatarColor(p.userData?._id || p.socketID || p.userData?.name)}
+                />
               )}
               {hostSocketId === socket?.id && p.socketID !== socket?.id && (
                 <i

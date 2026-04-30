@@ -5,7 +5,7 @@ import AISuggestions from "../../components/AiSuggestions/AiSuggestions";
 import Output from "../../components/Output/Output";
 
 import "./Dashboard.css";
-import { API } from "../../api";
+
 import {
   CODE_SNIPPETS,
   ILanguagesVersion,
@@ -70,7 +70,6 @@ const Dashboard: React.FC = () => {
     }
 
     socket.on("participant-left", ({ msg, socketID, data, type }) => {
-      
       setParticipantData(data.participants);
       showPopup(msg, type);
     });
@@ -82,23 +81,20 @@ const Dashboard: React.FC = () => {
       setRoomData({ roomTitle: "", roomPassword: "", hostSocketId: "" });
     });
 
-    socket.on("removed-from-room",({msg,type})=>{
-      
+    socket.on("removed-from-room", ({ msg, type }) => {
       showPopup(msg, type);
       setExistsRoom(false);
       setParticipantData([]);
       setRoomData({ roomTitle: "", roomPassword: "", hostSocketId: "" });
-    })
+    });
 
-    socket.on('participant-removed',({msg,type,data})=>{
-      
-      setParticipantData(data.participants)
+    socket.on("participant-removed", ({ msg, type, data }) => {
+      setParticipantData(data.participants);
       showPopup(msg, type);
-    })
+    });
     socket.on("user-joined", ({ msg, type, data }) => {
       showPopup(msg, type);
       setParticipantData(data.participants);
-      
     });
 
     socket.emit("join-room", { roomID, roomPassword, userData });
@@ -106,6 +102,9 @@ const Dashboard: React.FC = () => {
     socket.on("join-room-success", ({ msg, type, data }) => {
       setExistsRoom(true);
       setParticipantData(data.participants);
+      if (data.lastCode) {
+        setCode(data.lastCode);
+      }
       showPopup(msg, type);
       setRoomData({
         roomTitle: data.roomTitle,
@@ -140,8 +139,8 @@ const Dashboard: React.FC = () => {
       socket.off("user-joined");
       socket.off("participant-left");
       socket.off("end-session");
-      socket.off("removed-from-room")
-      socket.off("participant-removed")
+      socket.off("removed-from-room");
+      socket.off("participant-removed");
     };
   }, [socket, roomID, roomPassword, userData]);
 
@@ -149,14 +148,46 @@ const Dashboard: React.FC = () => {
   const executeCode = async (language: string, sourceCode: string) => {
     try {
       setOutputLoading(true);
-      const { data } = await API.post("/execute", {
-        language,
-        version: LANGUAGE_VERSIONS[language as keyof ILanguagesVersion],
-        files: [{ content: sourceCode }],
+      const token = localStorage.getItem(
+        process.env.REACT_APP_AUTH_TOKEN as string,
+      );
+      const BackendURL = process.env.REACT_APP_BACKEND_URL as string;
+      const response = await fetch(`${BackendURL}/api/code/execute`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: token as string },
+        body: JSON.stringify({
+          language,
+          version: LANGUAGE_VERSIONS[language as keyof ILanguagesVersion],
+          code:sourceCode
+        }),
       });
+      const data = await response.json();
+      if (!response.ok) {
+        setOutput({
+          language,
+          version: LANGUAGE_VERSIONS[language as keyof ILanguagesVersion],
+          run: {
+            code: 1,
+            output: data?.msg || data?.error || "Code execution failed",
+            stdout: "",
+            stderr: data?.msg || data?.error || "Code execution failed",
+          },
+        });
+        return data;
+      }
       setOutput(data);
       return data;
     } catch (error) {
+      setOutput({
+        language,
+        version: LANGUAGE_VERSIONS[language as keyof ILanguagesVersion],
+        run: {
+          code: 1,
+          output: "Network error",
+          stdout: "",
+          stderr: "Network error",
+        },
+      });
       showPopup("Network error", "ERROR");
     } finally {
       setOutputLoading(false);
@@ -182,7 +213,6 @@ const Dashboard: React.FC = () => {
         title={roomData.roomTitle}
         password={roomData.roomPassword}
         onLeave={() => {
-          
           if (roomData.hostSocketId === socket?.id) {
             navigate("/");
             window.location.reload();
@@ -210,10 +240,10 @@ const Dashboard: React.FC = () => {
             participantsData={participantData}
             hostSocketId={roomData.hostSocketId}
           />
-          <AISuggestions code={code} setCode={setCode} />
+          {/* <AISuggestions code={code} setCode={setCode} /> */}
         </aside>
       </div>
-      <Chat/>
+      <Chat />
     </>
   );
 };

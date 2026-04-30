@@ -1,23 +1,38 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import "./RoomToggle.css";
 import ButtonLoader from "../Utility/ButtonLoader/ButtonLoader";
 import { usePopup } from "../../context/popupContext";
 
+const ROOM_TITLE_MIN_LENGTH = 3;
+const ROOM_TITLE_MAX_LENGTH = 50;
+const ROOM_PASSWORD_MIN_LENGTH = 4;
+const ROOM_PASSWORD_MAX_LENGTH = 20;
+
 interface IRommTogglePROP {
-  handleCreateRoom: (roomTitle: string, roomPassword: string) => void;
+  handleCreateRoom: (
+    roomTitle: string,
+    roomPassword: string,
+    maxParticipants: number
+  ) => void;
   handleJoinRoom: (roomID: string, roomPassword: string) => void;
   btnLoading: boolean;
+  selectedRoom?: {
+    roomID: string;
+    roomPassword: string;
+  } | null;
 }
 
 const RoomToggle: React.FC<IRommTogglePROP> = ({
   handleCreateRoom,
   handleJoinRoom,
   btnLoading,
+  selectedRoom,
 }) => {
   const [activeTab, setActiveTab] = useState<"join" | "create">("join");
   const [roomTitle, setRoomTitle] = useState("");
   const [roomID, setRoomID] = useState("");
   const [roomPassword, setRoomPassword] = useState("");
+  const [maxParticipants, setMaxParticipants] = useState(5);
   const { showPopup } = usePopup();
   const [passwordType, setPasswordType] = useState("password");
 
@@ -28,6 +43,17 @@ const RoomToggle: React.FC<IRommTogglePROP> = ({
       setPasswordType("text");
     }
   };
+
+  useEffect(() => {
+    if (!selectedRoom) {
+      return;
+    }
+
+    setActiveTab("join");
+    setRoomID(selectedRoom.roomID);
+    setRoomPassword(selectedRoom.roomPassword);
+  }, [selectedRoom]);
+
   return (
     <div className="room-toggle-container">
       {/* Toggle Buttons */}
@@ -101,7 +127,8 @@ const RoomToggle: React.FC<IRommTogglePROP> = ({
               type="text"
               placeholder="Enter Room Title"
               value={roomTitle}
-              minLength={3}
+              minLength={ROOM_TITLE_MIN_LENGTH}
+              maxLength={ROOM_TITLE_MAX_LENGTH}
               onChange={(e) => setRoomTitle(e.target.value)}
               required
             />
@@ -112,6 +139,8 @@ const RoomToggle: React.FC<IRommTogglePROP> = ({
                 placeholder="Set Room Password"
                 value={roomPassword}
                 onChange={(e) => setRoomPassword(e.target.value)}
+                minLength={ROOM_PASSWORD_MIN_LENGTH}
+                maxLength={ROOM_PASSWORD_MAX_LENGTH}
                 required
               />
               {passwordType === "password" ? (
@@ -120,10 +149,34 @@ const RoomToggle: React.FC<IRommTogglePROP> = ({
                 <i className="bi bi-eye-slash" onClick={passwordToggle}></i>
               )}
             </div>
+            <select
+              value={maxParticipants}
+              onChange={(e) => setMaxParticipants(Number(e.target.value))}
+              aria-label="Maximum participants"
+            >
+              {Array.from({ length: 20 }, (_, index) => index + 1).map(
+                (count) => (
+                  <option key={count} value={count}>
+                    {count} {count === 1 ? "person" : "people"} limit
+                  </option>
+                )
+              )}
+            </select>
             <button
               onClick={() => {
                 if (!roomTitle.trim()) {
-                  showPopup("Room ID required", "WARNING");
+                  showPopup("Room title required", "WARNING");
+                  return;
+                }
+
+                if (
+                  roomTitle.trim().length < ROOM_TITLE_MIN_LENGTH ||
+                  roomTitle.trim().length > ROOM_TITLE_MAX_LENGTH
+                ) {
+                  showPopup(
+                    `Room title must be ${ROOM_TITLE_MIN_LENGTH}-${ROOM_TITLE_MAX_LENGTH} characters`,
+                    "WARNING"
+                  );
                   return;
                 }
 
@@ -131,7 +184,18 @@ const RoomToggle: React.FC<IRommTogglePROP> = ({
                   showPopup("Password Required", "WARNING");
                   return;
                 }
-                handleCreateRoom(roomTitle, roomPassword);
+
+                if (
+                  roomPassword.trim().length < ROOM_PASSWORD_MIN_LENGTH ||
+                  roomPassword.trim().length > ROOM_PASSWORD_MAX_LENGTH
+                ) {
+                  showPopup(
+                    `Password must be ${ROOM_PASSWORD_MIN_LENGTH}-${ROOM_PASSWORD_MAX_LENGTH} characters`,
+                    "WARNING"
+                  );
+                  return;
+                }
+                handleCreateRoom(roomTitle, roomPassword, maxParticipants);
               }}
               disabled={btnLoading}
             >

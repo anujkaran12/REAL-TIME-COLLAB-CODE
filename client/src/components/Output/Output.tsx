@@ -4,6 +4,8 @@ import "./Output.css";
 interface IOutputProp {
   outputLoading: boolean;
   output: {
+    msg?: string;
+    error?: string;
     language: string;
     run: {
       code: number;
@@ -19,10 +21,19 @@ interface IOutputProp {
 }
 
 const Output: React.FC<IOutputProp> = ({ outputLoading, output }) => {
-  const data = output?.run?.output || "";
-  const isError = output?.run?.code !== 0;
+  const data =
+    output?.run?.output ||
+    output?.run?.stdout ||
+    output?.run?.stderr ||
+    output?.msg ||
+    output?.error ||
+    "";
+  const hasOutput = Boolean(output?.run || output?.msg || output?.error);
+  const isError = hasOutput && output?.run?.code !== 0;
   const status = outputLoading
     ? "running"
+    : !hasOutput
+    ? "idle"
     : isError
     ? "error"
     : "success";
@@ -41,6 +52,11 @@ const Output: React.FC<IOutputProp> = ({ outputLoading, output }) => {
               <i className="bi bi-lightning-charge-fill"></i> Running
             </>
           )}
+          {status === "idle" && (
+            <>
+              <i className="bi bi-terminal-fill"></i> Ready
+            </>
+          )}
           {status === "success" && (
             <>
               <i className="bi bi-check-circle-fill"></i> Success
@@ -56,21 +72,23 @@ const Output: React.FC<IOutputProp> = ({ outputLoading, output }) => {
 
       {/* Details Section */}
       <div className="output-details">
-        <span><strong>Language:</strong> {output?.language}</span>
-        <span><strong>Version:</strong> {output?.version}</span>
+        <span><strong>Language:</strong> {output?.language || "-"}</span>
+        <span><strong>Version:</strong> {output?.version || "-"}</span>
         {output?.run?.time && (
           <span><strong>Time:</strong> {output.run.time}s</span>
         )}
         {output?.run?.memory && (
           <span><strong>Memory:</strong> {output.run.memory} KB</span>
         )}
-        <span><strong>Exit Code:</strong> {output?.run?.code}</span>
+        <span><strong>Exit Code:</strong> {output?.run?.code ?? "-"}</span>
       </div>
 
       {/* Logs */}
       <div className="output-log">
         {outputLoading ? (
           <p className="output-loading">Compiling...</p>
+        ) : !data ? (
+          <p className="output-line">Run code to see output here.</p>
         ) : (
           data
             .split("\n")
