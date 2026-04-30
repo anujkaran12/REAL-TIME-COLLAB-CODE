@@ -21,6 +21,9 @@ const userRouter_1 = require("./routes/userRouter");
 const loginValidator_1 = require("./utils/loginValidator");
 const socket_io_1 = require("socket.io");
 const http_1 = __importDefault(require("http"));
+const codeRouter_1 = require("./routes/codeRouter");
+const dashboardRouter_1 = require("./routes/dashboardRouter");
+const sessionModel_1 = require("./models/sessionModel");
 //config env varibale for accessing
 dotenv_1.default.config();
 //connect to the mongoDB
@@ -42,11 +45,40 @@ const io = new socket_io_1.Server(server, {
     },
 });
 let rooms = new Map();
+const ROOM_TITLE_MIN_LENGTH = 3;
+const ROOM_TITLE_MAX_LENGTH = 50;
+const ROOM_PASSWORD_MIN_LENGTH = 4;
+const ROOM_PASSWORD_MAX_LENGTH = 20;
+const DEFAULT_CODE_SNIPPET = `function greet(name) {
+\tconsole.log("Hello, " + name + "!");
+}
+
+greet("World");`;
+const isWithinLength = (value, min, max) => {
+    const length = value.trim().length;
+    return length >= min && length <= max;
+};
 // Listen for socket connections
 io.on("connection", (socket) => {
     console.log("A client connected:", socket.id);
     /********************** listen emit event from the client - create-room  ****************************/
-    socket.on("create-room", ({ roomTitle, roomPassword, userData, hostUserId }) => {
+    socket.on("create-room", (_a) => __awaiter(void 0, [_a], void 0, function* ({ roomTitle, roomPassword, userData, hostUserId, maxParticipants = 5 }) {
+        if (!roomTitle ||
+            !isWithinLength(roomTitle, ROOM_TITLE_MIN_LENGTH, ROOM_TITLE_MAX_LENGTH)) {
+            socket.emit("room-create-log", {
+                msg: `Room title must be ${ROOM_TITLE_MIN_LENGTH}-${ROOM_TITLE_MAX_LENGTH} characters.`,
+                type: "WARNING",
+            });
+            return;
+        }
+        if (!roomPassword ||
+            !isWithinLength(roomPassword, ROOM_PASSWORD_MIN_LENGTH, ROOM_PASSWORD_MAX_LENGTH)) {
+            socket.emit("room-create-log", {
+                msg: `Room password must be ${ROOM_PASSWORD_MIN_LENGTH}-${ROOM_PASSWORD_MAX_LENGTH} characters.`,
+                type: "WARNING",
+            });
+            return;
+        }
         let roomID = "";
         console.log("CREATE ROOM TRIGGER");
         while (1) {
@@ -56,12 +88,27 @@ io.on("connection", (socket) => {
             }
         }
         socket.join(roomID);
+        const roomLimit = Math.min(Math.max(Number(maxParticipants) || 5, 1), 20);
         rooms.set(roomID, {
             roomID,
-            roomTitle,
-            roomPassword,
+            roomTitle: roomTitle.trim(),
+            roomPassword: roomPassword.trim(),
             hostUserId,
             hostSocketId: socket.id,
+            maxParticipants: roomLimit,
+            lastCode: DEFAULT_CODE_SNIPPET,
+            lastLanguage: "javascript",
+            participants: [],
+        });
+        yield sessionModel_1.sessionModel.create({
+            roomID,
+            roomTitle: roomTitle.trim(),
+            roomPassword: roomPassword.trim(),
+            hostUserId,
+            hostSocketId: socket.id,
+            maxParticipants: roomLimit,
+            lastCode: DEFAULT_CODE_SNIPPET,
+            lastLanguage: "javascript",
             participants: [],
         });
         // console.log("Room - ", rooms.get(roomID));
@@ -70,9 +117,9 @@ io.on("connection", (socket) => {
             type: "SUCCESS",
             data: rooms.get(roomID),
         });
-    });
+    }));
     /********************** listen emit event from the client - join-room  ****************************/
-    socket.on("join-room", ({ roomID, roomPassword, userData }) => {
+    socket.on("join-room", (_a) => __awaiter(void 0, [_a], void 0, function* ({ roomID, roomPassword, userData }) {
         const room = rooms.get(roomID);
         if (!room) {
             socket.emit("join-room-error", {
@@ -93,6 +140,13 @@ io.on("connection", (socket) => {
         if (userExistsInRoom) {
             return;
         }
+        if (room.participants.length >= room.maxParticipants) {
+            socket.emit("join-room-error", {
+                msg: "Room is full.",
+                type: "ERROR",
+            });
+            return;
+        }
         console.log("JOIN ROOM - ", roomID);
         socket.join(roomID);
         room.participants.push({
@@ -101,6 +155,22 @@ io.on("connection", (socket) => {
             role: room.hostSocketId === socket.id ? "HOST" : "GUEST",
         });
         rooms.set(roomID, room);
+        yield sessionModel_1.sessionModel.updateOne({ roomID }, {
+            $push: {
+                participants: {
+                    userId: userData === null || userData === void 0 ? void 0 : userData._id,
+                    name: userData === null || userData === void 0 ? void 0 : userData.name,
+                    email: userData === null || userData === void 0 ? void 0 : userData.email,
+                    avatar: userData === null || userData === void 0 ? void 0 : userData.avatar,
+                    socketID: socket.id,
+                    role: room.hostSocketId === socket.id ? "HOST" : "GUEST",
+                },
+            },
+            $set: {
+                status: "ACTIVE",
+                hostSocketId: room.hostSocketId,
+            },
+        });
         socket.emit("join-room-success", {
             msg: room.hostSocketId === socket.id
                 ? "You are the HOST of this session."
@@ -113,7 +183,7 @@ io.on("connection", (socket) => {
             type: "INFO",
             data: room,
         }); // notify others in room
-    });
+    }));
     /***********************************   checking room valid or not **********************************/
     socket.on("check-room", ({ roomID, roomPassword }) => {
         const room = rooms.get(roomID);
@@ -131,6 +201,13 @@ io.on("connection", (socket) => {
             });
             return;
         }
+        if (room.participants.length >= room.maxParticipants) {
+            socket.emit("join-room-check-valid", {
+                msg: "Room is full.",
+                type: "ERROR",
+            });
+            return;
+        }
         socket.emit("join-room-check-valid", {
             msg: "Room found and accessible.",
             roomID,
@@ -139,7 +216,7 @@ io.on("connection", (socket) => {
         });
     });
     /***********************************  listen emit event from the client - leave-room  **********************************/
-    socket.on("leave-room", ({ roomID, userData }) => {
+    socket.on("leave-room", (_a) => __awaiter(void 0, [_a], void 0, function* ({ roomID, userData }) {
         const room = rooms.get(roomID);
         console.log("leave-room");
         if (!room) {
@@ -149,6 +226,13 @@ io.on("connection", (socket) => {
         //checking if the host leave the room then end the session
         if (room.hostSocketId === socket.id) {
             rooms.delete(roomID);
+            yield sessionModel_1.sessionModel.updateOne({ roomID }, {
+                $set: {
+                    status: "ENDED",
+                    endedAt: new Date(),
+                    "participants.$[participant].leftAt": new Date(),
+                },
+            }, { arrayFilters: [{ "participant.socketID": socket.id }] });
             socket.to(roomID).emit("end-session", {
                 msg: `Host ended the session for room "${room.roomTitle}`,
                 type: "INFO",
@@ -158,6 +242,11 @@ io.on("connection", (socket) => {
         }
         // Remove the leaving participant from the participants array
         room.participants = room.participants.filter((p) => p.socketID !== socket.id);
+        yield sessionModel_1.sessionModel.updateOne({ roomID, "participants.socketID": socket.id }, {
+            $set: {
+                "participants.$.leftAt": new Date(),
+            },
+        });
         // Update the room map
         rooms.set(roomID, room);
         console.log("participant length:  ", room.participants.length);
@@ -178,9 +267,9 @@ io.on("connection", (socket) => {
         if (room.participants.length === 0) {
             rooms.delete(roomID);
         }
-    });
+    }));
     /***************************************** Remove participant from room **************************************/
-    socket.on("remove-participant", ({ roomId, participantSocketId }) => {
+    socket.on("remove-participant", (_a) => __awaiter(void 0, [_a], void 0, function* ({ roomId, participantSocketId }) {
         const room = rooms.get(roomId);
         if (!room) {
             socket.emit("join-room-error", {
@@ -191,6 +280,11 @@ io.on("connection", (socket) => {
         }
         const participantData = room.participants.filter((p) => p.socketID === participantSocketId);
         room.participants = room.participants.filter((p) => p.socketID !== participantSocketId);
+        yield sessionModel_1.sessionModel.updateOne({ roomID: roomId, "participants.socketID": participantSocketId }, {
+            $set: {
+                "participants.$.leftAt": new Date(),
+            },
+        });
         io.to(roomId).emit("participant-removed", {
             msg: `${participantData[0].userData.name} removed by the host`,
             data: rooms.get(roomId),
@@ -207,9 +301,9 @@ io.on("connection", (socket) => {
                 type: "ERROR",
             });
         }
-    });
+    }));
     /*************************************** Listining on code update *****************************************/
-    socket.on("code-update", ({ updatedCode, roomID, editorName }) => {
+    socket.on("code-update", (_a) => __awaiter(void 0, [_a], void 0, function* ({ updatedCode, roomID, editorName, language }) {
         const room = rooms.get(roomID);
         if (!room) {
             socket.emit("join-room-error", {
@@ -218,7 +312,31 @@ io.on("connection", (socket) => {
             });
             return;
         }
+        room.lastCode = updatedCode;
+        room.lastLanguage = language || room.lastLanguage || "javascript";
+        rooms.set(roomID, room);
+        yield sessionModel_1.sessionModel.updateOne({ roomID }, {
+            $set: {
+                lastCode: updatedCode,
+                lastLanguage: room.lastLanguage,
+                lastEditedBy: editorName,
+                lastEditedAt: new Date(),
+            },
+        });
         socket.to(roomID).emit("code-update", { updatedCode, editorName });
+    }));
+    /*************************************** Listening on cursor update *****************************************/
+    socket.on("cursor-update", ({ roomID, position, userData, color }) => {
+        const room = rooms.get(roomID);
+        if (!room) {
+            return;
+        }
+        socket.to(roomID).emit("cursor-update", {
+            socketID: socket.id,
+            position,
+            userData,
+            color,
+        });
     });
     /*************************************** Listining on send message *****************************************/
     socket.on("send-msg", (roomID, msg) => {
@@ -244,6 +362,11 @@ io.on("connection", (socket) => {
 });
 // Default route
 app.use("/api/auth", authRouter_1.authRouter);
+// Temporarily disabled for local API testing in Postman.
+// Re-enable this before production or protected-route testing.
+// app.use(loginValidator);
+app.use("/api/dashboard", loginValidator_1.loginValidator, dashboardRouter_1.dashboardRouter);
+app.use("/api/code", codeRouter_1.codeRouter);
 app.use(loginValidator_1.loginValidator);
 app.use("/api/user", userRouter_1.userRouter);
 // Start server

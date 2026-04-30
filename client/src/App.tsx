@@ -8,6 +8,8 @@ const Home = lazy(() => import("./pages/Home/Home"));
 const Navbar = lazy(() => import("./components/Navbar/Navbar"));
 const Dashboard = lazy(() => import("./pages/Dashboard/Dashboard"));
 const RoomPage = lazy(() => import("./pages/RoomPage/RoomPage"));
+const WorkspaceDashboard = lazy(() => import("./pages/WorkspaceDashboard/WorkspaceDashboard"));
+const RoomDetails = lazy(() => import("./pages/RoomDetails/RoomDetails"));
 const PageNotFound = lazy(() => import("./components/Utility/PageNotFound/PageNotFound"));
 
 function App() {
@@ -17,9 +19,11 @@ function App() {
         <Navbar />
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/Dashboard" element={<RoomPage />} />
-          {/* <Route path="/RoomPage" element={<RoomPage />} /> */}
+          <Route path="/Dashboard" element={<WorkspaceDashboard />} />
+          <Route path="/Dashboard/rooms/:roomID" element={<RoomDetails />} />
+          <Route path="/RoomPage" element={<RoomPage />} />
           <Route path="/Room" element={<Dashboard />} />
+          <Route path="/Playground" element={<Dashboard />} />
           <Route path="*" element={<PageNotFound />} />
         </Routes>
       </Suspense>

@@ -34,7 +34,9 @@ const Navbar: React.FC = () => {
     localStorage.setItem(process.env.REACT_APP_AUTH_TOKEN as string, "");
     dispatch(fetchUser(""));
   };
-  if (location.pathname === "/Room" || location.pathname === "/room") {
+  if (
+    ["/room", "/playground"].includes(location.pathname.toLowerCase())
+  ) {
     return <></>;
   }
   return (

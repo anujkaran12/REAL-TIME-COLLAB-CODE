@@ -23,6 +23,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   code,
   setCode,
 }) => {
+  
   const [searchParams] = useSearchParams();
   const roomID = searchParams.get("ID");
 
@@ -58,6 +59,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
       updatedCode: value,
       roomID: roomID,
       editorName: userData?.name,
+      language: selectedLanguage,
     });
   };
 

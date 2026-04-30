@@ -26,7 +26,7 @@ const RoomPage: React.FC = () => {
         showPopup(msg, type);
         setButtonLoading(false);
         if (type === "SUCCESS") {
-          navigate(`/Room?ID=${roomID}&pass=${roomPassword}`);
+          navigate(`/Playground?ID=${roomID}&pass=${roomPassword}`);
         }
       }
     );
@@ -34,7 +34,7 @@ const RoomPage: React.FC = () => {
     socket?.on("room-create-log", ({ msg, type, data }) => {
       setButtonLoading(false);
       showPopup(msg, type);
-      navigate(`/Room?ID=${data.roomID}&pass=${data.roomPassword}`);
+      navigate(`/Playground?ID=${data.roomID}&pass=${data.roomPassword}`);
     });
     return () => {
       socket?.off("join-room-check-valid");
@@ -51,7 +51,11 @@ const RoomPage: React.FC = () => {
 
     socket.emit("check-room", { roomID, roomPassword });
   };
-  const handleCreateRoom = async (roomTitle: string, roomPassword: string) => {
+  const handleCreateRoom = async (
+    roomTitle: string,
+    roomPassword: string,
+    maxParticipants: number
+  ) => {
     if (!socket) {
       showPopup("Socket not connected", "ERROR");
       return;
@@ -60,6 +64,7 @@ const RoomPage: React.FC = () => {
     socket?.emit("create-room", {
       roomTitle,
       roomPassword,
+      maxParticipants,
       userData,
       hostUserId: userData?._id,
     });
