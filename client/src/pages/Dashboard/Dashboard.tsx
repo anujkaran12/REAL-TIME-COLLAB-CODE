@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import CodeEditor from "../../components/Editor/Editor";
 import Participants from "../../components/Participants/Participants";
-import AISuggestions from "../../components/AiSuggestions/AiSuggestions";
+
 import Output from "../../components/Output/Output";
 
 import "./Dashboard.css";
@@ -40,7 +40,7 @@ const Dashboard: React.FC = () => {
   const {
     userData,
     loading: userLoading,
-    error: userError,
+    
   } = useSelector((state: RootState) => state.User);
 
   const [participantData, setParticipantData] = useState([]);
@@ -142,7 +142,7 @@ const Dashboard: React.FC = () => {
       socket.off("removed-from-room");
       socket.off("participant-removed");
     };
-  }, [socket, roomID, roomPassword, userData]);
+  }, [socket, roomID, roomPassword, userData,showPopup]);
 
   // Method to execute code
   const executeCode = async (language: string, sourceCode: string) => {

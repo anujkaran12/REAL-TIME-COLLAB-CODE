@@ -11,9 +11,7 @@ import Loading from "../../components/Utility/Loading/Loading";
 import NotLoggedIn from "../../components/Utility/NotLoggedIn/NotLoggedIn";
 
 const RoomPage: React.FC = () => {
-  const { userData, loading, error } = useSelector(
-    (state: RootState) => state.User
-  );
+  const { userData, loading } = useSelector((state: RootState) => state.User);
   const [btnLoading, setButtonLoading] = useState(false);
   const { showPopup } = usePopup();
   const navigate = useNavigate();
@@ -28,7 +26,7 @@ const RoomPage: React.FC = () => {
         if (type === "SUCCESS") {
           navigate(`/Playground?ID=${roomID}&pass=${roomPassword}`);
         }
-      }
+      },
     );
 
     socket?.on("room-create-log", ({ msg, type, data }) => {
@@ -40,7 +38,7 @@ const RoomPage: React.FC = () => {
       socket?.off("join-room-check-valid");
       socket?.off("room-create-log");
     };
-  }, [socket]);
+  }, [socket, navigate, showPopup]);
 
   const handleJoinRoom = (roomID: string, roomPassword: string) => {
     if (!socket) {
@@ -54,7 +52,7 @@ const RoomPage: React.FC = () => {
   const handleCreateRoom = async (
     roomTitle: string,
     roomPassword: string,
-    maxParticipants: number
+    maxParticipants: number,
   ) => {
     if (!socket) {
       showPopup("Socket not connected", "ERROR");
@@ -81,7 +79,6 @@ const RoomPage: React.FC = () => {
             handleCreateRoom={handleCreateRoom}
             handleJoinRoom={handleJoinRoom}
             btnLoading={btnLoading}
-            
           />
         </div>
       )}

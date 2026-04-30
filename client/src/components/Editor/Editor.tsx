@@ -23,7 +23,6 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   code,
   setCode,
 }) => {
-  
   const [searchParams] = useSearchParams();
   const roomID = searchParams.get("ID");
 
@@ -36,7 +35,6 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
 
   const [fontSize, setFontSize] = useState(14);
 
- 
   const languages = Object.entries(LANGUAGE_VERSIONS);
 
   const { showPopup } = usePopup();
@@ -51,7 +49,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
     return () => {
       socket?.off("code-update");
     };
-  }, [socket]);
+  }, [socket, setCode]);
 
   const onChangeEditor = (value: string) => {
     setCode(value || " ");
@@ -114,7 +112,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
       return showPopup("Type something to execute !", "WARNING");
     }
     await executeCode(selectedLanguage, code);
-  }, [code, languages]);
+  }, [code, executeCode, selectedLanguage, showPopup]);
   return (
     <div className="editor-container">
       {/* Toolbar */}

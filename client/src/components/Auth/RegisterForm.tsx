@@ -5,7 +5,7 @@ import { useAuth } from "../../context/authContext";
 import { usePopup } from "../../context/popupContext";
 import axios from "axios";
 import ButtonLoader from "../Utility/ButtonLoader/ButtonLoader";
-import VerifyCode from "./VerifyCode";
+
 
 const RegisterForm: React.FC = () => {
   const { setOpenAuthFormType } = useAuth();
@@ -18,7 +18,7 @@ const RegisterForm: React.FC = () => {
   });
   const [passwordType, setPasswordType] = useState("password");
 
-  const [verificationCode, setVerificationCode] = useState<string | null>(null);
+  
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   const { showPopup } = usePopup();
@@ -84,37 +84,6 @@ const RegisterForm: React.FC = () => {
 
 
 
-
-  const onVerifyCode = async (formVerificationCode: string) => {
-    if (formVerificationCode !== verificationCode) {
-      return showPopup("Verification code not match.", "ERROR");
-    }
-    setLoading(true);
-    try {
-      const res = await axios.post(
-        `${process.env.REACT_APP_BACKEND_URL}/api/auth/register`,
-        formData
-      );
-
-      showPopup(res.data.msg, res.data.type);
-
-      setFormData({
-        name: "",
-        email: "",
-        password: "",
-        confirmPassword: "",
-        gender: "",
-      });
-      
-      setOpenAuthFormType("LOGIN");
-    } catch (error: any) {
-      showPopup(
-        error.response?.data.msg || "Network error",
-        error.response?.data.type || "ERROR"
-      );
-    }
-    setLoading(false);
-  };
   return (
   
         <div
