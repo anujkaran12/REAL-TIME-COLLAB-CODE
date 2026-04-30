@@ -10,7 +10,7 @@ import { useSelector } from "react-redux";
 import { io, Socket } from "socket.io-client";
 import { RootState } from "../redux/store";
 import { usePopup } from "./popupContext";
-import { useNavigate } from "react-router-dom";
+
 
 type SocketContextType = {
   socket: Socket | null;
