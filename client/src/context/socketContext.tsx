@@ -2,7 +2,7 @@
 import React, {
   createContext,
   useContext,
-  useRef,
+  
   useEffect,
   useState,
 } from "react";
@@ -23,7 +23,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const { showPopup } = usePopup();
-  const navigate = useNavigate();
+  
   const { userData } = useSelector((state: RootState) => state.User);
   useEffect(() => {
     if (userData) {
@@ -49,7 +49,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
     return () => {
       socket?.disconnect();
     };
-  }, [userData]);
+  }, [userData,showPopup,socket]);
 
   return (
     <SocketContext.Provider value={{ socket }}>

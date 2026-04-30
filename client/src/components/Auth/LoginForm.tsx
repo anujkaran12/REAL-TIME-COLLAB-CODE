@@ -77,10 +77,7 @@ const LoginForm: React.FC = () => {
     setLoading(false)
   };
 
-  const handleGoogleLogin = () => {
-    console.log("Sign in with Google clicked");
-    // Add Google OAuth logic
-  };
+
 
   return (
     <div className="auth-form-container" onClick={(e) => e.stopPropagation()}>

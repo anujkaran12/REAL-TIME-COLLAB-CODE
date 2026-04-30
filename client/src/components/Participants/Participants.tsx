@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect } from "react";
 import "./Participants.css";
 import { useSocket } from "../../context/socketContext";
 import { useSearchParams } from "react-router-dom";

@@ -29,7 +29,7 @@ const Navbar: React.FC = () => {
     if (!userData) {
       dispatch(fetchUser(""));
     }
-  }, []);
+  }, [dispatch,userData]);
   const onLogout = () => {
     localStorage.setItem(process.env.REACT_APP_AUTH_TOKEN as string, "");
     dispatch(fetchUser(""));
