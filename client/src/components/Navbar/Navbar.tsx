@@ -50,7 +50,7 @@ const Navbar: React.FC = () => {
           <>
             <button
               className="auth-btn "
-              onClick={() => navigate("/Dashboard")}
+              onClick={() => navigate("/dashboard")}
               title="Join or Create Room"
             >
               Join | Create Rooms

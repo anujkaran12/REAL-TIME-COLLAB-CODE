@@ -100,7 +100,7 @@ const WorkspaceDashboard: React.FC = () => {
         showPopupRef.current(msg, type);
         setButtonLoading(false);
         if (type === "SUCCESS") {
-          navigate(`/Playground?ID=${roomID}&pass=${roomPassword}`);
+          navigate(`/playground?ID=${roomID}&pass=${roomPassword}`);
         }
       }
     );
@@ -109,7 +109,7 @@ const WorkspaceDashboard: React.FC = () => {
       setButtonLoading(false);
       showPopupRef.current(msg, type);
       fetchDashboard();
-      navigate(`/Playground?ID=${data.roomID}&pass=${data.roomPassword}`);
+      navigate(`/playground?ID=${data.roomID}&pass=${data.roomPassword}`);
     });
 
     return () => {
@@ -207,7 +207,7 @@ const WorkspaceDashboard: React.FC = () => {
                 <article
                   className="session-row"
                   key={session._id}
-                  onClick={() => navigate(`/Dashboard/rooms/${session.roomID}`)}
+                  onClick={() => navigate(`/dashboard/rooms/${session.roomID}`)}
                 >
                   <div>
                     <h3>{session.roomTitle}</h3>
@@ -224,7 +224,7 @@ const WorkspaceDashboard: React.FC = () => {
                       className="history-btn"
                       onClick={(event) => {
                         event.stopPropagation();
-                        navigate(`/Dashboard/rooms/${session.roomID}`);
+                        navigate(`/dashboard/rooms/${session.roomID}`);
                       }}
                     >
                       View history
@@ -234,7 +234,7 @@ const WorkspaceDashboard: React.FC = () => {
                         onClick={(event) => {
                           event.stopPropagation();
                           navigate(
-                            `/Playground?ID=${session.roomID}&pass=${session.roomPassword}`
+                            `/playground?ID=${session.roomID}&pass=${session.roomPassword}`
                           );
                         }}
                       >

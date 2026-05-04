@@ -125,7 +125,7 @@ const RoomDetails: React.FC = () => {
         <div className="room-details-empty">
           <h1>{pageError || "Room history not found"}</h1>
           <p>This page shows saved session history, not a live joinable room.</p>
-          <button onClick={() => navigate("/Dashboard")}>Back to dashboard</button>
+          <button onClick={() => navigate("/dashboard")}>Back to dashboard</button>
         </div>
       </main>
     );
@@ -139,7 +139,7 @@ const RoomDetails: React.FC = () => {
     <main className="room-details-page">
       <section className="room-details-header">
         <div>
-          <button className="back-link" onClick={() => navigate("/Dashboard")}>
+          <button className="back-link" onClick={() => navigate("/dashboard")}>
             <i className="bi bi-arrow-left"></i> Dashboard
           </button>
           <p className="details-kicker">Room Session</p>
@@ -157,7 +157,7 @@ const RoomDetails: React.FC = () => {
             <button
               onClick={() =>
                 navigate(
-                  `/Playground?ID=${session.roomID}&pass=${session.roomPassword}`
+                  `/playground?ID=${session.roomID}&pass=${session.roomPassword}`
                 )
               }
             >

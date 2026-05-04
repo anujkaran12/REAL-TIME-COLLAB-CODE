@@ -24,7 +24,7 @@ const RoomPage: React.FC = () => {
         showPopup(msg, type);
         setButtonLoading(false);
         if (type === "SUCCESS") {
-          navigate(`/Playground?ID=${roomID}&pass=${roomPassword}`);
+          navigate(`/playground?ID=${roomID}&pass=${roomPassword}`);
         }
       },
     );
@@ -32,7 +32,7 @@ const RoomPage: React.FC = () => {
     socket?.on("room-create-log", ({ msg, type, data }) => {
       setButtonLoading(false);
       showPopup(msg, type);
-      navigate(`/Playground?ID=${data.roomID}&pass=${data.roomPassword}`);
+      navigate(`/playground?ID=${data.roomID}&pass=${data.roomPassword}`);
     });
     return () => {
       socket?.off("join-room-check-valid");

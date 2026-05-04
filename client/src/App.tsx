@@ -1,5 +1,5 @@
 import "./App.css";
-import { Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { Suspense, lazy } from "react";
 import Loading from "./components/Utility/Loading/Loading";
 
@@ -12,6 +12,21 @@ const WorkspaceDashboard = lazy(() => import("./pages/WorkspaceDashboard/Workspa
 const RoomDetails = lazy(() => import("./pages/RoomDetails/RoomDetails"));
 const PageNotFound = lazy(() => import("./components/Utility/PageNotFound/PageNotFound"));
 
+const RedirectWithSearch = ({ to }: { to: string }) => {
+  const location = useLocation();
+  return <Navigate to={`${to}${location.search}${location.hash}`} replace />;
+};
+
+const LowercasePathRedirect = () => {
+  const location = useLocation();
+  return (
+    <Navigate
+      to={`${location.pathname.toLowerCase()}${location.search}${location.hash}`}
+      replace
+    />
+  );
+};
+
 function App() {
   return (
     
@@ -19,11 +34,19 @@ function App() {
         <Navbar />
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/Dashboard" element={<WorkspaceDashboard />} />
-          <Route path="/Dashboard/rooms/:roomID" element={<RoomDetails />} />
-          <Route path="/RoomPage" element={<RoomPage />} />
-          <Route path="/Room" element={<Dashboard />} />
-          <Route path="/Playground" element={<Dashboard />} />
+          <Route path="/dashboard" element={<WorkspaceDashboard />} />
+          <Route path="/dashboard/rooms/:roomID" element={<RoomDetails />} />
+          <Route path="/room-page" element={<RoomPage />} />
+          <Route path="/room" element={<Dashboard />} />
+          <Route path="/playground" element={<Dashboard />} />
+          <Route path="/Dashboard" element={<RedirectWithSearch to="/dashboard" />} />
+          <Route
+            path="/Dashboard/rooms/:roomID"
+            element={<LowercasePathRedirect />}
+          />
+          <Route path="/RoomPage" element={<RedirectWithSearch to="/room-page" />} />
+          <Route path="/Room" element={<RedirectWithSearch to="/room" />} />
+          <Route path="/Playground" element={<RedirectWithSearch to="/playground" />} />
           <Route path="*" element={<PageNotFound />} />
         </Routes>
       </Suspense>

@@ -81,7 +81,7 @@ const Home: React.FC = () => {
               
                 <button
                   className="btn primary"
-                  onClick={() => navigate('/Dashboard')}
+                  onClick={() => navigate("/dashboard")}
                 >
                   Join | Create Room
                 </button>
