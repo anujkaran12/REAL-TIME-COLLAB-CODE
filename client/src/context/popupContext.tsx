@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useState,
+  ReactNode,
+} from "react";
 import PopupBar from "../components/PopupBar/PopupBar";
 import "../components/PopupBar/PopupBar.css";
 
@@ -22,7 +28,7 @@ export const PopupProvider: React.FC<{ children: ReactNode }> = ({
 }) => {
   const [popups, setPopups] = useState<PopupType[]>([]);
 
-  const showPopup = (msg: string, type: PopupVariant) => {
+  const showPopup = useCallback((msg: string, type: PopupVariant) => {
     const id = Date.now() + Math.random(); // unique id
     const newPopup: PopupType = { id, message: msg, type };
 
@@ -39,7 +45,7 @@ export const PopupProvider: React.FC<{ children: ReactNode }> = ({
         setPopups((prev) => prev.filter((p) => p.id !== id));
       }, 400);
     }, 7000);
-  };
+  }, []);
 
   return (
     <PopupContext.Provider value={{ showPopup }}>

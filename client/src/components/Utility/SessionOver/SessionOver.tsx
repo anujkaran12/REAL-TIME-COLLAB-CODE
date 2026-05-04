@@ -19,7 +19,7 @@ const SessionOver: React.FC = () => {
           <button className="session-over-btn" onClick={() => navigate("/")}>
             <i className="bi bi-house-door"></i> Go Home
           </button>
-          <button className="session-over-btn primary" onClick={() => navigate("/Dashboard")}>
+          <button className="session-over-btn primary" onClick={() => navigate("/dashboard")}>
             <i className="bi bi-plus-circle"></i> New Room
           </button>
         </div>
