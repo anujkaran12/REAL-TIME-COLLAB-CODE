@@ -1,31 +1,24 @@
 import { userModel } from "../models/userModel";
 import { IRegisterUserInfo, Request, Response } from "../types";
-import { uploadCloudinary } from "../utils/cloudinaryUpload";
+import { uploadCloudinaryBuffer } from "../utils/cloudinaryUpload";
 import { compareHashString, hashString } from "../utils/hashAndCompare";
 import jwt from "jsonwebtoken";
 import { sendMail } from "../utils/sendMail";
 
 export const registerUser = async (req: Request, res: Response) => {
   try {
-    const { name, email, password, gender }: IRegisterUserInfo = req.body;
+    const { name, email, password }: IRegisterUserInfo = req.body;
     if (
       !name?.trim() ||
       !email?.trim() ||
-      !password?.toString().trim() ||
-      !gender?.trim()
+      !password?.toString().trim()
     ) {
       return res.status(401).json({
         msg: "All credentials required",
         type: "WARNING",
       });
     }
-    // check gender type valid
-    if (!["MALE", "FEMALE", "OTHER"].includes(gender.toUpperCase())) {
-      return res.status(401).json({
-        msg: "Invalid gender type",
-        type: "WARNING",
-      });
-    }
+
     // checking user in DB
     const userExisted = await userModel.findOne({ email });
     if (userExisted) {
@@ -34,24 +27,21 @@ export const registerUser = async (req: Request, res: Response) => {
         type: "WARNING",
       });
     }
-    // const avatar = await uploadCloudinary(
-    //   `https://avatar.iran.liara.run/public/${
-    //     gender.toUpperCase() === "MALE" ? "boy" : "girl"
-    //   }?username=${email.split("@")[0]}`
-    // );
-
-    // return;
+    const uploadedAvatar = req.file
+      ? await uploadCloudinaryBuffer(req.file.buffer)
+      : null;
     const hashPassword = await hashString(password.toString());
 
     const user = await userModel.create({
       name: name,
       email: email,
       password: hashPassword,
-      // avatar: {
-      //   secure_url: avatar?.secure_url,
-      //   public_id: avatar?.public_id,
-      // },
-      gender:gender.toUpperCase()
+      ...(uploadedAvatar && {
+        avatar: {
+          secure_url: uploadedAvatar.secure_url,
+          public_id: uploadedAvatar.public_id,
+        },
+      }),
     });
 
     if (user) {

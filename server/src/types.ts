@@ -4,7 +4,6 @@ export interface IRegisterUserInfo {
   name: string;
   email: string;
   password: string;
-  gender:string;
 }
 
 export interface AuthenticatedRequest extends Request {

@@ -53,9 +53,9 @@ const sessionSchema = new mongoose_1.Schema({
     hostSocketId: String,
     maxParticipants: {
         type: Number,
-        min: 1,
-        max: 20,
-        default: 5,
+        min: 2,
+        max: 21,
+        default: 6,
     },
     status: {
         type: String,

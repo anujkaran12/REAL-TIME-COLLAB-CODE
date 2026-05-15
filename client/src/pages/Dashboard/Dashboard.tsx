@@ -243,7 +243,7 @@ const Dashboard: React.FC = () => {
           {/* <AISuggestions code={code} setCode={setCode} /> */}
         </aside>
       </div>
-      <Chat />
+      <Chat participantsData={participantData} />
     </>
   );
 };

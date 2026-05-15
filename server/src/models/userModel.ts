@@ -4,8 +4,7 @@ interface IUser {
   name: string;
   email: string;
   password: string;
-  gender: string;
-  avatar: {
+  avatar?: {
     secure_url: string;
     public_id: string;
   };
@@ -24,13 +23,9 @@ const userSchema = new Schema<IUser>(
       type: String,
       required: true,
     },
-    gender: {
-      type: String,
-      require: true,
-    },
     avatar: {
-      secure_url: { type: String, require: true },
-      public_id: { type: String, require: true },
+      secure_url: { type: String },
+      public_id: { type: String },
     },
   },
   { timestamps: true }

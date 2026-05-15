@@ -8,6 +8,7 @@ import { useSelector } from "react-redux";
 import { RootState } from "../../redux/store";
 
 import { useSearchParams } from "react-router-dom";
+import { Code, Copy } from "lucide-react";
 
 interface CodeEditorProps {
   executeCode: (language: string, sourceCode: string) => Promise<void>;
@@ -162,14 +163,14 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
 
         <div className="toolbar-right">
           <button className="copy-btn" onClick={copyToClipboard}>
-            <i className="bi bi-copy"></i> Copy
+            <Copy size={14}/> Copy
           </button>
           <button
             className="run-btn"
             onClick={onRunHandler}
             disabled={outputLoading}
           >
-            <i className="bi bi-code"></i> Run
+            <Code size={14}/> Run
           </button>
         </div>
       </div>

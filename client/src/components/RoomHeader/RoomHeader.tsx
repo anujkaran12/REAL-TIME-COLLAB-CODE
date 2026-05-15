@@ -17,7 +17,9 @@ const RoomHeader: React.FC<RoomHeaderProps> = ({
   onLeave,
   hostSocketId,
 }) => {
-  const [darkMode, setDarkMode] = useState<boolean>(true);
+  const [darkMode, setDarkMode] = useState<boolean>(() => {
+    return localStorage.getItem("CODE_SYNC_THEME") !== "light";
+  });
   const socket = useSocket();
   const role = hostSocketId === socket?.id ? "HOST" : "GUEST";
 
@@ -27,8 +29,10 @@ const RoomHeader: React.FC<RoomHeaderProps> = ({
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add("dark");
+      localStorage.setItem("CODE_SYNC_THEME", "dark");
     } else {
       document.documentElement.classList.remove("dark");
+      localStorage.setItem("CODE_SYNC_THEME", "light");
     }
   }, [darkMode]);
 
@@ -49,7 +53,7 @@ const RoomHeader: React.FC<RoomHeaderProps> = ({
     <header className="room-header">
       <div className="room-info">
         <div className="title-role">
-          <h2 className="room-title">{title?.toUpperCase()}</h2>
+          <h2 className="room-title">{title || "Untitled room"}</h2>
           <span className={`role-badge ${role.toLowerCase()}`}>{role}</span>
         </div>
         <p className="room-meta">

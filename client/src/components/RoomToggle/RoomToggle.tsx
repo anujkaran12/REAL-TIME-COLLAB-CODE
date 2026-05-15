@@ -2,11 +2,14 @@ import React, { useEffect, useState } from "react";
 import "./RoomToggle.css";
 import ButtonLoader from "../Utility/ButtonLoader/ButtonLoader";
 import { usePopup } from "../../context/popupContext";
+import { Eye, EyeOff } from "lucide-react";
 
 const ROOM_TITLE_MIN_LENGTH = 3;
 const ROOM_TITLE_MAX_LENGTH = 50;
 const ROOM_PASSWORD_MIN_LENGTH = 4;
 const ROOM_PASSWORD_MAX_LENGTH = 20;
+const GUEST_LIMIT_MIN = 1;
+const GUEST_LIMIT_MAX = 20;
 
 interface IRommTogglePROP {
   handleCreateRoom: (
@@ -32,7 +35,7 @@ const RoomToggle: React.FC<IRommTogglePROP> = ({
   const [roomTitle, setRoomTitle] = useState("");
   const [roomID, setRoomID] = useState("");
   const [roomPassword, setRoomPassword] = useState("");
-  const [maxParticipants, setMaxParticipants] = useState(5);
+  const [guestLimit, setGuestLimit] = useState(5);
   const { showPopup } = usePopup();
   const [passwordType, setPasswordType] = useState("password");
 
@@ -93,13 +96,28 @@ const RoomToggle: React.FC<IRommTogglePROP> = ({
                 placeholder="Enter Room Password"
                 value={roomPassword}
                 onChange={(e) => setRoomPassword(e.target.value)}
-                maxLength={5}
+                minLength={ROOM_PASSWORD_MIN_LENGTH}
+                maxLength={ROOM_PASSWORD_MAX_LENGTH}
               />
 
               {passwordType === "password" ? (
-                <i className="bi bi-eye" onClick={passwordToggle}></i>
+                <button
+                  type="button"
+                  className="room-password-toggle"
+                  onClick={passwordToggle}
+                  aria-label="Show room password"
+                >
+                  <Eye size={18} />
+                </button>
               ) : (
-                <i className="bi bi-eye-slash" onClick={passwordToggle}></i>
+                <button
+                  type="button"
+                  className="room-password-toggle"
+                  onClick={passwordToggle}
+                  aria-label="Hide room password"
+                >
+                  <EyeOff size={18} />
+                </button>
               )}
             </div>
             <button
@@ -113,7 +131,7 @@ const RoomToggle: React.FC<IRommTogglePROP> = ({
                   showPopup("Password Required", "WARNING");
                   return;
                 }
-                handleJoinRoom(roomID, roomPassword);
+                handleJoinRoom(roomID.trim(), roomPassword.trim());
               }}
               disabled={btnLoading}
             >
@@ -144,26 +162,52 @@ const RoomToggle: React.FC<IRommTogglePROP> = ({
                 required
               />
               {passwordType === "password" ? (
-                <i className="bi bi-eye" onClick={passwordToggle}></i>
+                <button
+                  type="button"
+                  className="room-password-toggle"
+                  onClick={passwordToggle}
+                  aria-label="Show room password"
+                >
+                  <Eye size={18} />
+                </button>
               ) : (
-                <i className="bi bi-eye-slash" onClick={passwordToggle}></i>
+                <button
+                  type="button"
+                  className="room-password-toggle"
+                  onClick={passwordToggle}
+                  aria-label="Hide room password"
+                >
+                  <EyeOff size={18} />
+                </button>
               )}
             </div>
-            <select
-              value={maxParticipants}
-              onChange={(e) => setMaxParticipants(Number(e.target.value))}
-              aria-label="Maximum participants"
-            >
-              {Array.from({ length: 20 }, (_, index) => index + 1).map(
-                (count) => (
-                  <option key={count} value={count}>
-                    {count} {count === 1 ? "person" : "people"} limit
-                  </option>
-                )
-              )}
-            </select>
+            <div className="number-field">
+              <input
+                type="number"
+                min={GUEST_LIMIT_MIN}
+                max={GUEST_LIMIT_MAX}
+                step={1}
+                value={guestLimit}
+                onChange={(e) => setGuestLimit(Number(e.target.value))}
+                onBlur={() =>
+                  setGuestLimit((limit) =>
+                    Math.min(
+                      Math.max(Number(limit) || GUEST_LIMIT_MIN, GUEST_LIMIT_MIN),
+                      GUEST_LIMIT_MAX
+                    )
+                  )
+                }
+                aria-label="Guest limit excluding yourself"
+              />
+              <span>guest limit, excluding you</span>
+            </div>
             <button
               onClick={() => {
+                const normalizedGuestLimit = Math.min(
+                  Math.max(Number(guestLimit) || GUEST_LIMIT_MIN, GUEST_LIMIT_MIN),
+                  GUEST_LIMIT_MAX
+                );
+
                 if (!roomTitle.trim()) {
                   showPopup("Room title required", "WARNING");
                   return;
@@ -195,7 +239,11 @@ const RoomToggle: React.FC<IRommTogglePROP> = ({
                   );
                   return;
                 }
-                handleCreateRoom(roomTitle, roomPassword, maxParticipants);
+                handleCreateRoom(
+                  roomTitle,
+                  roomPassword,
+                  normalizedGuestLimit + 1
+                );
               }}
               disabled={btnLoading}
             >
