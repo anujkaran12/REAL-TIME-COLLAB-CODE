@@ -9,6 +9,7 @@ import { usePopup } from "../../context/popupContext";
 import ButtonLoader from "../Utility/ButtonLoader/ButtonLoader";
 import axios from "axios";
 import { setUser } from "../../redux/userSlice";
+import { Eye, EyeOff, X } from "lucide-react";
 
 const LoginForm: React.FC = () => {
   const { setOpenAuthFormType } = useAuth();
@@ -120,9 +121,23 @@ const LoginForm: React.FC = () => {
             </p>
           )}
           {passwordType === "password" ? (
-            <i className="bi bi-eye" onClick={passwordToggle}></i>
+            <button
+              type="button"
+              className="auth-icon-button"
+              onClick={passwordToggle}
+              aria-label="Show password"
+            >
+              <Eye size={18} />
+            </button>
           ) : (
-            <i className="bi bi-eye-slash" onClick={passwordToggle}></i>
+            <button
+              type="button"
+              className="auth-icon-button"
+              onClick={passwordToggle}
+              aria-label="Hide password"
+            >
+              <EyeOff size={18} />
+            </button>
           )}
         </div>
 
@@ -148,10 +163,14 @@ const LoginForm: React.FC = () => {
         Don’t have an account?{" "}
         <span onClick={() => setOpenAuthFormType("REGISTER")}>Create one</span>
       </p>
-      <i
-        className="bi bi-x-lg cancelIcon"
+      <button
+        type="button"
+        className="cancelIcon"
         onClick={() => setOpenAuthFormType(null)}
-      ></i>
+        aria-label="Close login form"
+      >
+        <X size={18} />
+      </button>
     </div>
   );
 };

@@ -134,6 +134,10 @@ const RoomDetails: React.FC = () => {
   const editedAt = session.lastEditedAt
     ? new Date(session.lastEditedAt).toLocaleString()
     : "Not edited yet";
+  const guestCount = session.participants.filter(
+    (participant) => participant.role !== "HOST"
+  ).length;
+  const guestLimit = Math.max(session.maxParticipants - 1, 1);
 
   return (
     <main className="room-details-page">
@@ -145,8 +149,7 @@ const RoomDetails: React.FC = () => {
           <p className="details-kicker">Room Session</p>
           <h1>{session.roomTitle}</h1>
           <p>
-            ID {session.roomID} · {session.participants.length}/
-            {session.maxParticipants} members
+            ID {session.roomID} · {guestCount}/{guestLimit} guests
           </p>
         </div>
         <div className="room-detail-actions">

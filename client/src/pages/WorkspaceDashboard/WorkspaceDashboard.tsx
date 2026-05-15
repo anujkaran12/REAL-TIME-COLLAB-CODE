@@ -7,36 +7,11 @@ import { useSocket } from "../../context/socketContext";
 import RoomToggle from "../../components/RoomToggle/RoomToggle";
 import Loading from "../../components/Utility/Loading/Loading";
 import NotLoggedIn from "../../components/Utility/NotLoggedIn/NotLoggedIn";
+import RecentMembers from "./components/RecentMembers";
+import SessionList from "./components/SessionList";
+import WorkspaceHero from "./components/WorkspaceHero";
+import { RecentMember, Session } from "./types";
 import "./WorkspaceDashboard.css";
-
-type SessionParticipant = {
-  name?: string;
-  email?: string;
-  avatar?: {
-    secure_url?: string;
-  };
-};
-
-type Session = {
-  _id: string;
-  roomID: string;
-  roomTitle: string;
-  roomPassword: string;
-  maxParticipants: number;
-  status: "ACTIVE" | "ENDED";
-  lastCode?: string;
-  lastLanguage?: string;
-  lastEditedBy?: string;
-  lastEditedAt?: string;
-  participants: SessionParticipant[];
-  createdAt: string;
-  updatedAt: string;
-};
-
-type RecentMember = SessionParticipant & {
-  lastSessionTitle?: string;
-  lastJoinedAt?: string;
-};
 
 const WorkspaceDashboard: React.FC = () => {
   const { userData, loading } = useSelector((state: RootState) => state.User);
@@ -156,29 +131,13 @@ const WorkspaceDashboard: React.FC = () => {
 
   return (
     <main className="workspace-dashboard">
-      <section className="dashboard-hero">
-        <div>
-          <p className="dashboard-kicker">Workspace</p>
-          <h1>{userData.name}'s coding rooms</h1>
-          <p>
-            Create focused coding sessions, limit room size, and jump back into
-            recent collaboration history.
-          </p>
-        </div>
-        <div className="dashboard-stats">
-          <div>
-            <strong>{sessions.length}</strong>
-            <span>Rooms created</span>
-          </div>
-          <div>
-            <strong>{recentMembers.length}</strong>
-            <span>Recent members</span>
-          </div>
-        </div>
-      </section>
+      <WorkspaceHero
+        userName={userData.name}
+        roomCount={sessions.length}
+      />
 
       <section className="dashboard-grid">
-        <div className="dashboard-panel">
+        <div className="dashboard-panel room-panel">
           <RoomToggle
             handleCreateRoom={handleCreateRoom}
             handleJoinRoom={handleJoinRoom}
@@ -186,91 +145,17 @@ const WorkspaceDashboard: React.FC = () => {
           />
         </div>
 
-        <div className="dashboard-panel session-panel">
-          <div className="panel-heading">
-            <div>
-              <p className="dashboard-kicker">Sessions</p>
-              <h2>Created rooms</h2>
-            </div>
-            <button onClick={fetchDashboard} disabled={dashboardLoading}>
-              <i className="bi bi-arrow-clockwise"></i>
-            </button>
-          </div>
+        <SessionList
+          sessions={sessions}
+          loading={dashboardLoading}
+          onRefresh={fetchDashboard}
+          onViewHistory={(roomID) => navigate(`/dashboard/rooms/${roomID}`)}
+          onOpenRoom={(roomID, roomPassword) =>
+            navigate(`/playground?ID=${roomID}&pass=${roomPassword}`)
+          }
+        />
 
-          {dashboardLoading ? (
-            <Loading />
-          ) : sessions.length === 0 ? (
-            <p className="empty-state">No rooms created yet.</p>
-          ) : (
-            <div className="session-list">
-              {sessions.map((session) => (
-                <article
-                  className="session-row"
-                  key={session._id}
-                  onClick={() => navigate(`/dashboard/rooms/${session.roomID}`)}
-                >
-                  <div>
-                    <h3>{session.roomTitle}</h3>
-                    <p>
-                      ID {session.roomID} · {session.participants.length}/
-                      {session.maxParticipants} members
-                    </p>
-                  </div>
-                  <div className="session-actions">
-                    <span className={`session-status ${session.status.toLowerCase()}`}>
-                      {session.status}
-                    </span>
-                    <button
-                      className="history-btn"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        navigate(`/dashboard/rooms/${session.roomID}`);
-                      }}
-                    >
-                      View history
-                    </button>
-                    {session.status === "ACTIVE" && (
-                      <button
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          navigate(
-                            `/playground?ID=${session.roomID}&pass=${session.roomPassword}`
-                          );
-                        }}
-                      >
-                        Open
-                      </button>
-                    )}
-                  </div>
-                </article>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <aside className="dashboard-panel members-panel">
-          <p className="dashboard-kicker">People</p>
-          <h2>Recent members</h2>
-          {recentMembers.length === 0 ? (
-            <p className="empty-state">Members will appear after guests join.</p>
-          ) : (
-            <div className="member-list">
-              {recentMembers.map((member, index) => (
-                <div className="member-row" key={`${member.email}-${index}`}>
-                  {member.avatar?.secure_url ? (
-                    <img src={member.avatar.secure_url} alt={member.name} />
-                  ) : (
-                    <span>{member.name?.charAt(0).toUpperCase() || "U"}</span>
-                  )}
-                  <div>
-                    <strong>{member.name || "Unknown user"}</strong>
-                    <p>{member.lastSessionTitle}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </aside>
+        <RecentMembers members={recentMembers} />
       </section>
     </main>
   );

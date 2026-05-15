@@ -2,8 +2,8 @@ import React, { useCallback, useEffect } from "react";
 import "./Participants.css";
 import { useSocket } from "../../context/socketContext";
 import { useSearchParams } from "react-router-dom";
-import ReactAvatar from "react-avatar";
 import { getAvatarColor } from "../../utils/avatarColor";
+import { getInitials } from "../../utils/avatarInitials";
 interface Iprop {
   participantsData: any[];
   hostSocketId: string;
@@ -40,12 +40,16 @@ const Participants: React.FC<Iprop> = ({ participantsData, hostSocketId }) => {
                   loading="lazy"
                 />
               ) : (
-                <ReactAvatar
-                  name={p.userData.name}
-                  round={true}
-                  size="95"
-                  color={getAvatarColor(p.userData?._id || p.socketID || p.userData?.name)}
-                />
+                <span
+                  className="avatar-initials"
+                  style={{
+                    backgroundColor: getAvatarColor(
+                      p.userData?._id || p.socketID || p.userData?.name
+                    ),
+                  }}
+                >
+                  {getInitials(p.userData?.name)}
+                </span>
               )}
               {hostSocketId === socket?.id && p.socketID !== socket?.id && (
                 <i

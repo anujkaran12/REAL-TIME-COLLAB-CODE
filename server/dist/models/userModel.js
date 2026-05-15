@@ -15,13 +15,9 @@ const userSchema = new mongoose_1.Schema({
         type: String,
         required: true,
     },
-    gender: {
-        type: String,
-        require: true,
-    },
     avatar: {
-        secure_url: { type: String, require: true },
-        public_id: { type: String, require: true },
+        secure_url: { type: String },
+        public_id: { type: String },
     },
 }, { timestamps: true });
 exports.userModel = (0, mongoose_1.model)("usermodels", userSchema);

@@ -1,149 +1,172 @@
 .room-toggle-container {
   width: 100%;
-  max-width: 400px;
+  max-width: 430px;
   margin: 2rem auto;
-  background: var(--panel-bg);
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 6px 20px var(--shadow-color);
+  background: transparent;
+  border-radius: var(--radius-lg);
   position: relative;
 }
-
 
 .toggle-switch {
   position: relative;
   display: flex;
-  justify-content: space-between;
-  background: var(--bg-color);
-  border-radius: 50px;
   padding: 5px;
-  margin-bottom: 20px;
+  margin-bottom: 1rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
 }
 
 .toggle-switch button {
   flex: 1;
-  background: none;
-  border: none;
-  padding: 10px 0;
-  font-weight: 600;
+  min-height: 44px;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  color: var(--subtext-color);
   cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
   z-index: 2;
-  color: var(--text-color);
-  transition: color 0.3s ease;
+  transition: color 0.2s ease;
 }
 
 .toggle-switch button.active {
-  color: #111;
+  color: var(--button-text);
 }
 
 .slider {
   position: absolute;
   top: 5px;
   bottom: 5px;
-  width: 50%;
-  background: var(--highlight-color);
-  border-radius: 50px;
-  transition: transform 0.3s ease;
+  left: 5px;
+  width: calc(50% - 5px);
+  background: var(--button-bg);
+  border-radius: var(--radius-sm);
+  transition: transform 0.25s ease;
   z-index: 1;
 }
 
 .slider.join {
-  transform: translateX(0%);
+  transform: translateX(0);
 }
 
 .slider.create {
-  transform: translateX(95%);
+  transform: translateX(100%);
 }
 
-.tab-content {
+.tab-content,
+.form {
   display: flex;
   flex-direction: column;
-  gap: 15px;
+}
+
+.form {
+  gap: 0.9rem;
 }
 
 .form h3 {
-  font-size: 1.1rem;
-  color: var(--text-color);
-  margin-bottom: 10px;
-  text-align: center;
-  letter-spacing: .5px;
-  word-spacing: 3px;
-}
-.form i{
-  cursor: pointer;
-  font-size: 1.2rem;
-  position: absolute;
-  bottom: 10px;
-  right: 10px;
-}
-.form input,
-.form select {
-  padding: 12px;
-  border-radius: 8px;
-  border: 1px solid var(--border-color);
-  background: var(--bg-color);
-  color: var(--text-color);
-  width: 100%;
-  margin-top: 1rem;
-  font-size: .9rem;
-  
-  outline:0
+  color: var(--header-text);
+  font-size: 1.18rem;
+  font-weight: 600;
 }
 
-.form select {
+.room-password-toggle {
+  position: absolute;
+  right: 0.85rem;
+  top: 50%;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  transform: translateY(-50%);
+  background: transparent;
+  color: var(--subtext-color);
   cursor: pointer;
+}
+
+.form input,
+.form select {
+  width: 100%;
+  min-height: 48px;
+  padding: 0.78rem 0.92rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  outline: 0;
+  background: var(--surface-2);
+  color: var(--text-color);
+  font-size: 0.94rem;
+}
+
+.number-field {
+  position: relative;
+}
+
+.number-field input {
+  padding-right: 12rem;
+}
+
+.number-field span {
+  position: absolute;
+  right: 0.92rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--subtext-color);
+  font-size: 0.82rem;
+  pointer-events: none;
 }
 
 .form input::placeholder {
-  color: var(--subtext-color);
-  letter-spacing: 0px;
-  font-size: .9rem
+  color: var(--muted-text);
 }
+
 .form input:focus,
-.form select:focus{
-  border: 1px var(--highlight-color);
-  border-style: groove;
+.form select:focus {
+  border-color: var(--syntax-function);
+  background: var(--surface-1);
 }
-.input-letter-space{
-  letter-spacing: 3px;
+
+.input-letter-space {
+  letter-spacing: 0.08em;
 }
-.form button {
-  padding: 10px;
-  border-radius: 8px;
-  border: none;
+
+.form button:not(.room-password-toggle) {
+  width: 100%;
+  min-height: 50px;
+  margin-top: 0.2rem;
+  border-radius: var(--radius-sm);
   background: var(--button-bg);
   color: var(--button-text);
-  font-weight: 500;
-  font-size: .9rem;
   cursor: pointer;
-  width: 100%;
-  transition: background 0.3s ease;
-  margin-top: 1.7rem;
+  font-size: 0.96rem;
+  font-weight: 600;
+  transition: background 0.2s ease, transform 0.2s ease;
 }
 
-.form button:hover {
+.form button:not(.room-password-toggle):hover {
   background: var(--button-hover);
+  transform: translateY(-1px);
 }
 
-/* Responsive */
+.form button:not(.room-password-toggle):disabled {
+  background: var(--disabled-bg);
+  color: var(--disabled-text);
+  cursor: not-allowed;
+  transform: none;
+}
+
 @media (max-width: 480px) {
   .room-toggle-container {
-    padding: 1rem;
+    max-width: none;
   }
 
-
-  .toggle-switch button {
-    font-size: 0.9rem;
+  .number-field input {
+    padding-right: 0.92rem;
   }
 
-  .form
-  .form input {
-    padding: 9px;
-    font-size: .95rem;
-  }
-
-  .form button {
-    padding: 10px;
-    font-size: .9rem;
+  .number-field span {
+    position: static;
+    display: block;
+    margin-top: 0.4rem;
+    transform: none;
   }
 }

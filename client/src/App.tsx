@@ -10,6 +10,7 @@ const Dashboard = lazy(() => import("./pages/Dashboard/Dashboard"));
 const RoomPage = lazy(() => import("./pages/RoomPage/RoomPage"));
 const WorkspaceDashboard = lazy(() => import("./pages/WorkspaceDashboard/WorkspaceDashboard"));
 const RoomDetails = lazy(() => import("./pages/RoomDetails/RoomDetails"));
+const Profile = lazy(() => import("./pages/Profile/Profile"));
 const PageNotFound = lazy(() => import("./components/Utility/PageNotFound/PageNotFound"));
 
 const RedirectWithSearch = ({ to }: { to: string }) => {
@@ -35,6 +36,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/dashboard" element={<WorkspaceDashboard />} />
+          <Route path="/profile" element={<Profile />} />
           <Route path="/dashboard/rooms/:roomID" element={<RoomDetails />} />
           <Route path="/room-page" element={<RoomPage />} />
           <Route path="/room" element={<Dashboard />} />
@@ -47,6 +49,7 @@ function App() {
           <Route path="/RoomPage" element={<RedirectWithSearch to="/room-page" />} />
           <Route path="/Room" element={<RedirectWithSearch to="/room" />} />
           <Route path="/Playground" element={<RedirectWithSearch to="/playground" />} />
+          <Route path="/Profile" element={<RedirectWithSearch to="/profile" />} />
           <Route path="*" element={<PageNotFound />} />
         </Routes>
       </Suspense>

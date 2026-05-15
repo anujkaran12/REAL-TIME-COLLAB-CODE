@@ -5,11 +5,17 @@ import { useAuth } from "../../context/authContext";
 import { useSelector } from "react-redux";
 import { RootState } from "../../redux/store";
 import { useAppDispatch } from "../../hooks";
-import { fetchUser } from "../../redux/userSlice";
-import ReactAvatar from "react-avatar";
+import { fetchUser, setUser } from "../../redux/userSlice";
+import { getInitials } from "../../utils/avatarInitials";
+import { Menu, X } from "lucide-react";
+import ConfirmationDialog from "../Utility/ConfirmationDialog/ConfirmationDialog";
 const Navbar: React.FC = () => {
   const navigate = useNavigate();
-  const [darkMode, setDarkMode] = useState(true);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => {
+    return localStorage.getItem("CODE_SYNC_THEME") !== "light";
+  });
   const { setOpenAuthFormType } = useAuth();
 
   const dispatch = useAppDispatch();
@@ -18,8 +24,10 @@ const Navbar: React.FC = () => {
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add("dark");
+      localStorage.setItem("CODE_SYNC_THEME", "dark");
     } else {
       document.documentElement.classList.remove("dark");
+      localStorage.setItem("CODE_SYNC_THEME", "light");
     }
   }, [darkMode]);
 
@@ -30,9 +38,17 @@ const Navbar: React.FC = () => {
       dispatch(fetchUser(""));
     }
   }, [dispatch,userData]);
+
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [location.pathname]);
+
   const onLogout = () => {
     localStorage.setItem(process.env.REACT_APP_AUTH_TOKEN as string, "");
-    dispatch(fetchUser(""));
+    dispatch(setUser(null));
+    setShowLogoutConfirm(false);
+    setMenuOpen(false);
+    navigate("/");
   };
   if (
     ["/room", "/playground"].includes(location.pathname.toLowerCase())
@@ -40,10 +56,20 @@ const Navbar: React.FC = () => {
     return <></>;
   }
   return (
-    <nav className="navbar">
+    <nav className={`navbar ${menuOpen ? "menu-open" : ""}`}>
       <div className="navbar-left" onClick={() => navigate("/")}>
         <span className="logo">Code Sync</span>
       </div>
+
+      <button
+        className="navbar-menu-toggle"
+        type="button"
+        onClick={() => setMenuOpen((open) => !open)}
+        aria-label={menuOpen ? "Close menu" : "Open menu"}
+        aria-expanded={menuOpen}
+      >
+        {menuOpen ? <X size={18} /> : <Menu size={18} />}
+      </button>
 
       <div className="navbar-right">
         {userData ? (
@@ -56,7 +82,11 @@ const Navbar: React.FC = () => {
               Join | Create Rooms
             </button>
             {/* // User is logged in: show avatar + name */}
-            <div className="user-profile auth-btn" title="profile">
+            <button
+              className="user-profile auth-btn"
+              title="Profile"
+              onClick={() => navigate("/profile")}
+            >
               {userData?.avatar?.secure_url ? (
                 <img
                   src={userData?.avatar?.secure_url}
@@ -64,16 +94,16 @@ const Navbar: React.FC = () => {
                   className="user-avatar"
                 />
               ) : (
-                <div className="user-avatar">
-                  <ReactAvatar name={userData.name} size="100%" round={true} />
+                <div className="user-avatar user-avatar-initials">
+                  {getInitials(userData.name)}
                 </div>
               )}
               <span className="user-name">Hi, {userData?.name}</span>
-            </div>
+            </button>
             <button
               className="auth-btn "
-              onClick={() => onLogout()}
-              title="Join or Create Room"
+              onClick={() => setShowLogoutConfirm(true)}
+              title="Logout"
             >
               Logout
             </button>
@@ -103,12 +133,22 @@ const Navbar: React.FC = () => {
           aria-label="Toggle Dark Mode"
         >
           {darkMode ? (
-            <i className="bi bi-moon-stars-fill" title="dark mode"></i>
+            <i className="bi bi-sun-fill" title="Switch to light mode"></i>
           ) : (
-            <i className="bi bi-sun-fill" title="ligth mdoe"></i>
+            <i className="bi bi-moon-stars-fill" title="Switch to dark mode"></i>
           )}
         </button>
       </div>
+
+      <ConfirmationDialog
+        open={showLogoutConfirm}
+        title="Logout?"
+        message="You will be returned to the home page."
+        confirmLabel="Logout"
+        cancelLabel="Cancel"
+        onConfirm={onLogout}
+        onCancel={() => setShowLogoutConfirm(false)}
+      />
     </nav>
   );
 };

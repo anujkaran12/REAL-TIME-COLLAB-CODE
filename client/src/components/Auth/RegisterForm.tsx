@@ -5,7 +5,61 @@ import { useAuth } from "../../context/authContext";
 import { usePopup } from "../../context/popupContext";
 import axios from "axios";
 import ButtonLoader from "../Utility/ButtonLoader/ButtonLoader";
+import { Camera, Eye, EyeOff, User, X } from "lucide-react";
 
+const AVATAR_MAX_SIZE = 512;
+const AVATAR_QUALITY = 0.82;
+const AVATAR_MAX_UPLOAD_SIZE = 10 * 1024 * 1024;
+
+const fileToCompressedAvatar = (file: File) => {
+  return new Promise<{ previewUrl: string; file: File }>((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      const image = new Image();
+
+      image.onload = () => {
+        const scale = Math.min(
+          AVATAR_MAX_SIZE / image.width,
+          AVATAR_MAX_SIZE / image.height,
+          1
+        );
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(image.width * scale);
+        canvas.height = Math.round(image.height * scale);
+
+        const context = canvas.getContext("2d");
+        if (!context) {
+          reject(new Error("Unable to process image"));
+          return;
+        }
+
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              reject(new Error("Unable to process image"));
+              return;
+            }
+
+            resolve({
+              previewUrl: canvas.toDataURL("image/jpeg", AVATAR_QUALITY),
+              file: new File([blob], "avatar.jpg", { type: "image/jpeg" }),
+            });
+          },
+          "image/jpeg",
+          AVATAR_QUALITY
+        );
+      };
+
+      image.onerror = () => reject(new Error("Unable to read image"));
+      image.src = reader.result as string;
+    };
+
+    reader.onerror = () => reject(new Error("Unable to read image"));
+    reader.readAsDataURL(file);
+  });
+};
 
 const RegisterForm: React.FC = () => {
   const { setOpenAuthFormType } = useAuth();
@@ -14,8 +68,9 @@ const RegisterForm: React.FC = () => {
     email: "",
     password: "",
     confirmPassword: "",
-    gender: "",
   });
+  const [avatar, setAvatar] = useState("");
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [passwordType, setPasswordType] = useState("password");
 
   
@@ -31,6 +86,31 @@ const RegisterForm: React.FC = () => {
   };
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      showPopup("Please choose an image file", "WARNING");
+      return;
+    }
+
+    if (file.size > AVATAR_MAX_UPLOAD_SIZE) {
+      showPopup("Profile image must be 10 MB or smaller", "WARNING");
+      return;
+    }
+
+    try {
+      const compressedAvatar = await fileToCompressedAvatar(file);
+      setAvatar(compressedAvatar.previewUrl);
+      setAvatarFile(compressedAvatar.file);
+    } catch (error) {
+      showPopup("Unable to process image", "ERROR");
+    }
   };
 
   const validate = () => {
@@ -57,9 +137,18 @@ const RegisterForm: React.FC = () => {
 
     setLoading(true);
    try {
+      const registerPayload = new FormData();
+      registerPayload.append("name", formData.name);
+      registerPayload.append("email", formData.email);
+      registerPayload.append("password", formData.password);
+
+      if (avatarFile) {
+        registerPayload.append("avatar", avatarFile);
+      }
+
       const res = await axios.post(
         `${process.env.REACT_APP_BACKEND_URL}/api/auth/register`,
-        formData
+        registerPayload
       );
 
       showPopup(res.data.msg, res.data.type);
@@ -69,8 +158,9 @@ const RegisterForm: React.FC = () => {
         email: "",
         password: "",
         confirmPassword: "",
-        gender: "",
       });
+      setAvatar("");
+      setAvatarFile(null);
       
       setOpenAuthFormType("LOGIN");
     } catch (error: any) {
@@ -93,6 +183,27 @@ const RegisterForm: React.FC = () => {
           <h2 className="auth-form-title">Create An Account</h2>
 
           <form className="auth-form" onSubmit={handleSubmit}>
+            <div className="profile-upload">
+              <label className="profile-upload-control">
+                {avatar ? (
+                  <img src={avatar} alt="Profile preview" />
+                ) : (
+                  <span>
+                    <User size={30} />
+                  </span>
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarChange}
+                  disabled={loading}
+                />
+                <span className="profile-upload-icon">
+                  <Camera size={16} />
+                </span>
+              </label>
+            </div>
+
             <div className="auth-form-group">
               <input
                 className="auth-form-input"
@@ -150,9 +261,23 @@ const RegisterForm: React.FC = () => {
                 </p>
               )}
               {passwordType === "password" ? (
-                <i className="bi bi-eye" onClick={passwordToggle}></i>
+                <button
+                  type="button"
+                  className="auth-icon-button"
+                  onClick={passwordToggle}
+                  aria-label="Show password"
+                >
+                  <Eye size={18} />
+                </button>
               ) : (
-                <i className="bi bi-eye-slash" onClick={passwordToggle}></i>
+                <button
+                  type="button"
+                  className="auth-icon-button"
+                  onClick={passwordToggle}
+                  aria-label="Hide password"
+                >
+                  <EyeOff size={18} />
+                </button>
               )}
             </div>
 
@@ -174,39 +299,6 @@ const RegisterForm: React.FC = () => {
                 </p>
               )}
             </div>
-            <div className="auth-form-group">
-              <div className="custom-select-wrapper">
-                <select
-                  className="auth-form-input custom-select"
-                  name="gender"
-                  value={formData.gender}
-                  onChange={(e) =>
-                    setFormData({ ...formData, gender: e.target.value })
-                  }
-                  required
-                  disabled={loading}
-                >
-                  <option value="" disabled>
-                    Select Gender
-                  </option>
-                  <option value="male" disabled={loading}>
-                    Male
-                  </option>
-                  <option value="female" disabled={loading}>
-                    Female
-                  </option>
-                  <option value="other" disabled={loading}>
-                    Other
-                  </option>
-                </select>
-              </div>
-              {errors.gender && (
-                <p className="auth-form-helper auth-form-error">
-                  {errors.gender}
-                </p>
-              )}
-            </div>
-
             <button
               type="submit"
               className="form-btn auth-form-button"
@@ -227,10 +319,14 @@ const RegisterForm: React.FC = () => {
             Already have an account?{" "}
             <span onClick={() => setOpenAuthFormType("LOGIN")}>Sign in</span>
           </p>
-          <i
-            className="bi bi-x-lg  cancelIcon"
+          <button
+            type="button"
+            className="cancelIcon"
             onClick={() => setOpenAuthFormType(null)}
-          ></i>
+            aria-label="Close register form"
+          >
+            <X size={18} />
+          </button>
         </div>
       
   );
